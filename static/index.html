@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Layui</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="./layui/css/layui.css" >
+  <script src="./js/jquery.min.js"></script>
+  <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+  <style>
+      .layui-btn{
+          line-height:28px;
+      }
+      .layui-table-cell{
+        text-overflow:inherit !important;
+      }
+      .asss{
+        color: #ffffff !important;
+      }
+  </style>
+</head>
+<body>
+  <header>
+    <ul class="layui-nav">
+      <li class="layui-nav-item">
+        <a href="">控制台<span class="layui-badge">9</span></a>
+      </li>
+      <li class="layui-nav-item">
+        <a href="">个人中心<span class="layui-badge-dot"></span></a>
+      </li>
+      <li class="layui-nav-item" lay-unselect="">
+        <i class="layui-icon"><a href="javascript:;" id="userName"></a></i>
+      </li>
+    </ul>
+  </header>
+  <blockquote class="layui-elem-quote news_search">
+    <div class="layui-row">
+      <form class="layui-form layui-col-md12 x-so" id="complain_search">
+        邮箱账号:
+        <div class="layui-input-inline">
+          <input type="text" name="serviceCode" id="serviceCode"
+            placeholder="请输入邮箱账号" autocomplete="off" class="layui-input">
+        </div>     							
+        <button id="search" class="layui-btn" lay-submit
+          lay-filter="provinceSearch">
+          <i class="layui-icon">&#xe615;</i>
+        </button>
+      </form>
+    </div>
+    <table class="layui-hide" id="test" lay-filter="test"></table>
+  </blockquote>
+
+
+<script type="text/html" id="toolbarDemo">
+  <div class="layui-btn-container">
+    <button class="layui-btn layui-btn-sm" ><a href="./" class='asss' >刷新数据</a></button>
+    <button class="layui-btn layui-btn-sm" lay-event="getCheckData">获取选中行数据删除</button>
+    <button class="layui-btn layui-btn-sm" lay-event="getCheckLength">获取选中数目</button>
+    <button class="layui-btn layui-btn-sm" lay-event="isAll">验证是否全选</button>
+    <button type="button" class="layui-btn layui-btn-sm" lay-event="isAdmin">
+      <i class="layui-icon">&#xe608;</i> 添加用户
+    </button>
+  </div>
+</script>
+ 
+<script type="text/html" id="barDemo">
+  <a class="layui-btn layui-btn-danger" lay-event="del" >删除</a>
+</script>
+              
+          
+<script src="./layui/layui.js" ></script>
+<!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 --> 
+ 
+<script>
+ 
+layui.use('table', function(){
+  var table = layui.table;
+   var form = layui.form;
+  //温馨提示：默认由前端自动合计当前行数据。从 layui 2.5.6 开始： 若接口直接返回了合计行数据，则优先读取接口合计行数据。
+  //详见：https://www.layui.com/doc/modules/table.html#totalRow
+  table.render({
+    elem: '#test'
+    ,url:'http://127.0.0.1:8081/getdata'
+    ,toolbar: '#toolbarDemo'
+    ,title: '用户数据表'
+    ,totalRow: true
+    ,cols: [[
+      {type: 'checkbox', fixed: 'left'}
+      ,{field:'id', title:'ID', width:150, fixed: 'left', sort: true, totalRowText: '合计'}
+      ,{field:'username', title:'用户名', width:120,}
+      ,{field:'email', title:'邮箱', width:150, edit: 'text', templet: function(res){
+        return '<em>'+ res.email +'</em>'
+      }}
+      ,{field:'sex', title:'性别', width:80, edit: 'text', sort: true}
+      ,{field:'experience', title:'积分', width:80,event:"experience",sort: true, totalRow: true,}
+      ,{field:'logins', title:'登入次数', width:100, sort: true, totalRow: true,edit: 'text'}
+      ,{field:'sign', title:'签名',event:"sign"}
+      ,{field:'city', title:'城市', width:100,event:"city"}
+      ,{field:'ip', title:'IP', width:120,edit: 'text'}
+      ,{field:'joinTime', title:'加入时间', width:120,edit: 'text'}
+      ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150,edit: 'text'}
+    ]]
+    ,page: true
+    ,response: {
+      statusCode: 200 //重新规定成功的状态码为 200，table 组件默认为 0
+    }
+    ,parseData: function(res){ //将原始数据解析成 table 组件所规定的数据
+      return {
+        "code": res.status, //解析接口状态
+        "msg": res.message, //解析提示文本
+        "count": res.total, //解析数据长度
+        "data": res.rows.item //解析数据列表
+      };
+    }
+  });
+  //修改方法
+  function updatas(b ,c,d){
+    var a={data:b,value:c,event:d}
+    console.log(a)
+    $.ajax({
+            url:"http://127.0.0.1:8081/updata",
+            type:"get",
+            dataType:"json",
+            data:a,
+            success:function(s){
+              console.log(s)
+              if(s=="0"){
+                layer.msg("修改成功")
+                table.reload('test', {})
+                return
+              }
+              layer.msg("修改失败!")
+            },error:(err)=>{
+              console.log(err);
+            }
+          })
+  }
+  table.on('tool(test)', function(obj){
+    console.log(obj)
+    var data = obj.data;
+    switch(obj.event){
+        case "sign":
+        layer.prompt({
+        formType:2
+        ,title: '修改 ID 为 ['+ data.id +'] 的用户签名'
+        ,value: data.sign
+      }, function(value, index){
+          layer.close(index);    
+         updatas(data.id,value,obj.event)
+      
+        obj.update({
+          sign:value
+        });
+      });
+        break;
+        case "city":
+        layer.prompt({
+        formType:3
+        ,title: '修改 ID 为 ['+ data.id +'] 的城市'
+        ,value: data.city
+      }, function(value, index){
+          layer.close(index);
+          console.log(index)
+          updatas(data.id,value,obj.event)
+        obj.update({
+          city:value
+        });
+      });
+        break;
+        case "experience":
+        layer.prompt({
+        formType:2
+        ,title: '修改 ID 为 ['+ data.id +'] 的积分'
+        ,value:data.experience
+      }, function(value, index){
+        layer.close(index); 
+         updatas(data.id,value,obj.event)
+        //这里一般是发送修改的Ajax请求
+        //同步更新表格和缓存对应的值
+        obj.update({
+         experience:value
+        });
+      });
+        break;
+        case "del":
+        alert("请谨慎执行删除操作")
+          layer.confirm('真的删除行么', function(index){
+            var data=obj.data;
+            var a={
+              id:data.id
+            }
+            $.ajax({
+              url:"http://127.0.0.1:8081/delete",
+              data:a,
+              dataType:"json",
+              type:"get",
+              success:(d)=>{
+                if(d=="0"){
+                  layer.msg("删除成功！")
+                  obj.del();
+                  return;
+                }
+                layer.msg("删除失败")
+              }
+            })   
+         layer.close(index);
+       });
+        break;
+    }
+  
+  });
+  table.on('edit(test)', function(obj){
+    var value = obj.value //得到修改后的值
+    ,data = obj.data //得到所在行所有键值
+    ,field = obj.field; //得到字段
+    layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改为：'+ value);
+    console.log(data)
+  });
+  table.on('toolbar(test)', function(obj){
+    var checkStatus = table.checkStatus(obj.config.id);
+    switch(obj.event){
+      case 'getCheckData':
+        var data = checkStatus.data;
+        var selectCount = checkStatus.data.length
+        var userId=[]   
+        if( selectCount<2){
+          layer.msg("至少选中两项进行删除操作")
+          return false
+        }else {
+          for (var i in data) {
+            userId.push(parseInt(data[i].id))
+          }
+          parent.layer.msg('删除中...', {icon: 16,shade: 0.3,time:2000})
+          data={
+            arrs:userId
+          }
+          $.ajax({
+            url:"http://127.0.0.1:8081/deldetList",
+            type:"get",
+            data:data,
+            dataType:"json",
+            success:function(d){
+              console.log(d)
+              if(d==0){
+                parent.layer.msg('删除成功', {icon:15,shade: 0.3,time:2000})
+                table.reload('test', {})
+                return;
+              }
+              layer.msg("数据删除失败清联系工作人员")
+            },error:function(err){
+              console.log(err);
+            }
+          })
+         
+         
+          
+        }
+       
+        // layer.alert(JSON.stringify(data));
+      break;
+      case 'getCheckLength':
+        var data = checkStatus.data;
+        layer.msg('选中了：'+ data.length + ' 个');
+      break;
+      case 'isAll':
+        layer.msg(checkStatus.isAll ? '全选': '未全选')
+      break;
+      case 'isAdmin':
+        layer.msg('add')
+        layer.open({
+        type: 1
+        ,title: false //不显示标题栏
+        ,closeBtn: false
+        ,area: '600px;'
+        ,shade: 0.8
+        ,id: 'LAY_layuipro' //设定一个id，防止重复弹出
+        ,btn: ['火速围观', '残忍拒绝']
+        ,btnAlign: 'c'
+        ,moveType: 1 //拖拽模式，0或者1
+        ,content:''
+        ,success: function(layero){
+          var btn = layero.find('.layui-layer-btn');
+          btn.find('.layui-layer-btn0').attr({
+            href: 'http://www.layui.com/'
+            ,target: '_blank'
+          });
+        }
+      });
+      break;
+    };
+  });
+  //  form.render()
+  // form.on('submit(provinceSearch)',function(obj){
+  //     console.log(obj)
+  //     return false
+  // })
+  form.render();
+form.on('submit(provinceSearch)', function(data) {
+	var formData = data.field;
+  console.log(formData.serviceCode);
+  serviceCode = formData.serviceCode,
+  
+	 	compOrder = formData.compOrder,
+	 	compType = formData.compType,
+		complainState = formData.complainState;
+		
+	table.reload('test', {
+		where: { 
+      serviceCode,
+      },
+      page: {
+	 		curr: 1 
+		},
+		method: 'post',
+	contentType: "application/json;charset=utf-8",
+	url:'http://127.0.0.1:8081/Search',
+	});
+	return false;
+}); 
+});
+ $.ajax({
+   url:"http://127.0.0.1:8081/name",
+   type:"get",
+   success:function(d){
+    console.log(d);
+    $("#userName").html(' &#xe66f;'+d)
+   },error:(err)=>{
+     console.log(err)
+   }
+  
+ })
+</script>
+  
+</body>
+</html>
